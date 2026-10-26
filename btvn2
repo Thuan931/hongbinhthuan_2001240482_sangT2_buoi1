@@ -1,0 +1,45 @@
+# Bài 2 (bài tập về nhà)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+
+rng = np.random.default_rng(0)
+n = 500
+bmi = rng.normal(25, 4, n)
+xac_suat_that = 1 / (1 + np.exp(-0.6 * (bmi - 27)))
+mac_benh = rng.binomial(1, xac_suat_that)
+
+X = pd.DataFrame({"BMI": bmi})
+y = pd.Series(mac_benh)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+y_proba = model.predict_proba(X_test)[:, 1]
+
+nguong_list = [0.3, 0.5, 0.6, 0.7, 0.8, 0.9]
+ds_acc, ds_pre, ds_rec = [], [], []
+for t in nguong_list:
+    y_pred = (y_proba >= t).astype(int)
+    acc = accuracy_score(y_test, y_pred)
+    pre = precision_score(y_test, y_pred, zero_division=0)
+    rec = recall_score(y_test, y_pred, zero_division=0)
+    f1 = f1_score(y_test, y_pred, zero_division=0)
+    ds_acc.append(acc)
+    ds_pre.append(pre)
+    ds_rec.append(rec)
+    print(f"Ngưỡng = {t} | Accuracy = {acc:.3f} | Precision = {pre:.3f} | Recall = {rec:.3f} | F1 = {f1:.3f} | Số dự đoán mắc bệnh = {y_pred.sum()}")
+    print(confusion_matrix(y_test, y_pred))
+    print()
+
+plt.plot(nguong_list, ds_acc, marker="o", label="Accuracy")
+plt.plot(nguong_list, ds_pre, marker="o", label="Precision")
+plt.plot(nguong_list, ds_rec, marker="o", label="Recall")
+plt.title("Ảnh hưởng của ngưỡng dự đoán")
+plt.xlabel("Ngưỡng xác suất")
+plt.ylabel("Giá trị độ đo")
+plt.legend()
+plt.show()
