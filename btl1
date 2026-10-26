@@ -1,0 +1,65 @@
+# Bài 1 (bài tập ở lớp)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+
+def sinh_du_lieu(n, nhieu, them_bien=False, seed=0):
+    rng = np.random.default_rng(seed)
+    dien_tich = rng.uniform(30, 200, n)
+    gia = 500 + 25 * dien_tich + rng.normal(0, nhieu, n)
+    df = pd.DataFrame({"DienTich": dien_tich})
+    if them_bien:
+        phong_ngu = rng.integers(1, 6, n)
+        khoang_cach = rng.uniform(1, 30, n)
+        tuoi_nha = rng.integers(0, 40, n)
+        gia = gia + 150 * phong_ngu - 20 * khoang_cach - 8 * tuoi_nha
+        df["PhongNgu"] = phong_ngu
+        df["KhoangCach"] = khoang_cach
+        df["TuoiNha"] = tuoi_nha
+    df["GiaBan"] = gia
+    return df
+
+def huan_luyen(df):
+    X = df.drop(columns="GiaBan")
+    y = df["GiaBan"]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    return model, mse, r2, X_test, y_test, y_pred
+
+print("--- Câu 1: hồi quy tuyến tính đơn giản ---")
+df1 = sinh_du_lieu(100, 100)
+model, mse, r2, X_test, y_test, y_pred = huan_luyen(df1)
+print("Hệ số chặn:", model.intercept_)
+print("Hệ số góc:", model.coef_)
+print("MSE:", mse)
+print("R2:", r2)
+
+plt.scatter(X_test["DienTich"], y_test, color="blue", label="Dữ liệu thực")
+plt.plot(X_test["DienTich"].sort_values(), model.predict(X_test.sort_values("DienTich")), color="red", label="Dự đoán hồi quy")
+plt.title("Giá bán theo diện tích nhà")
+plt.xlabel("Diện tích (m2)")
+plt.ylabel("Giá bán (triệu VND)")
+plt.legend()
+plt.show()
+
+print("\n--- Câu 2: thay đổi số lượng dữ liệu và độ nhiễu ---")
+for n in [50, 500, 5000]:
+    for nhieu in [50, 200, 500]:
+        _, mse, r2, _, _, _ = huan_luyen(sinh_du_lieu(n, nhieu))
+        print(f"n = {n:5d} | nhiễu = {nhieu:3d} | MSE = {mse:12.2f} | R2 = {r2:.4f}")
+
+print("\n--- Câu 3: thêm các biến đầu vào ---")
+df3 = sinh_du_lieu(1000, 100, them_bien=True)
+model3, mse3, r23, _, _, _ = huan_luyen(df3)
+print("Hệ số chặn:", model3.intercept_)
+for ten, he_so in zip(df3.drop(columns="GiaBan").columns, model3.coef_):
+    print(f"Hệ số {ten}: {he_so:.4f}")
+print("MSE:", mse3)
+print("R2:", r23)
