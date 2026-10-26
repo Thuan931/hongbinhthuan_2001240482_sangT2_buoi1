@@ -1,0 +1,57 @@
+# Bài 3 (bài tập ở lớp)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+data = fetch_california_housing(as_frame=True)
+df = data.frame
+print(df.shape)
+print(df.info())
+print(df.describe())
+print("Giá trị thiếu:")
+print(df.isnull().sum())
+print("Số dòng trùng:", df.duplicated().sum())
+
+plt.figure(figsize=(9, 7))
+sns.heatmap(df.corr(), annot=True, fmt=".2f", cmap="coolwarm")
+plt.title("Ma trận tương quan")
+plt.show()
+
+df = df.drop_duplicates()
+df = df[df["MedHouseVal"] < 5]
+
+X = df.drop(columns="MedHouseVal")
+y = df["MedHouseVal"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+pipe_lr = Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())])
+pipe_lr.fit(X_train, y_train)
+y_pred_lr = pipe_lr.predict(X_test)
+
+pipe_ridge = Pipeline([("scaler", StandardScaler()), ("model", Ridge())])
+luoi_tham_so = {"model__alpha": [0.01, 0.1, 1, 10, 100]}
+grid = GridSearchCV(pipe_ridge, luoi_tham_so, cv=5, scoring="neg_mean_squared_error")
+grid.fit(X_train, y_train)
+y_pred_ridge = grid.predict(X_test)
+print("Siêu tham số tốt nhất:", grid.best_params_)
+
+def danh_gia(ten, y_true, y_pred):
+    mse = mean_squared_error(y_true, y_pred)
+    print(f"{ten}: MSE = {mse:.4f} | RMSE = {np.sqrt(mse):.4f} | MAE = {mean_absolute_error(y_true, y_pred):.4f} | R2 = {r2_score(y_true, y_pred):.4f}")
+
+danh_gia("Linear Regression", y_test, y_pred_lr)
+danh_gia("Ridge Regression", y_test, y_pred_ridge)
+
+plt.scatter(y_test, y_pred_lr, alpha=0.3)
+plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color="red")
+plt.title("Giá trị thực và giá trị dự đoán")
+plt.xlabel("Giá trị thực")
+plt.ylabel("Giá trị dự đoán")
+plt.show()
