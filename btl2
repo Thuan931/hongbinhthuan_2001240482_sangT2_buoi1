@@ -1,0 +1,47 @@
+# Bài 2 (bài tập ở lớp)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+rng = np.random.default_rng(0)
+n = 500
+bmi = rng.normal(25, 4, n)
+xac_suat_that = 1 / (1 + np.exp(-0.6 * (bmi - 27)))
+mac_benh = rng.binomial(1, xac_suat_that)
+df = pd.DataFrame({"BMI": bmi, "MacBenh": mac_benh})
+print(df.head())
+print(df["MacBenh"].value_counts())
+
+X = df[["BMI"]]
+y = df["MacBenh"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+y_proba = model.predict_proba(X_test)[:, 1]
+y_pred = model.predict(X_test)
+
+ket_qua = pd.DataFrame({"BMI": X_test["BMI"].values, "XacSuat": y_proba, "DuDoan": y_pred, "ThucTe": y_test.values})
+print(ket_qua.head(10))
+
+print("Độ chính xác (Accuracy):", accuracy_score(y_test, y_pred))
+print("Ma trận nhầm lẫn:")
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+luoi = np.linspace(df["BMI"].min(), df["BMI"].max(), 300).reshape(-1, 1)
+xac_suat_luoi = model.predict_proba(pd.DataFrame(luoi, columns=["BMI"]))[:, 1]
+
+plt.scatter(X_train["BMI"], y_train, color="blue", alpha=0.4, label="Dữ liệu huấn luyện")
+plt.scatter(X_test["BMI"], y_test, color="green", alpha=0.7, label="Dữ liệu kiểm tra")
+plt.plot(luoi, xac_suat_luoi, color="red", label="Đường hồi quy logistic")
+plt.axhline(0.5, color="gray", linestyle="--", label="Ngưỡng 0.5")
+plt.title("Hồi quy logistic: xác suất mắc bệnh theo BMI")
+plt.xlabel("BMI")
+plt.ylabel("Xác suất mắc bệnh")
+plt.legend()
+plt.show()
