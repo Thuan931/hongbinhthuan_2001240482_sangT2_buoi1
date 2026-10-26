@@ -1,0 +1,57 @@
+# Bài 1 (bài tập về nhà)
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score, accuracy_score
+
+print("--- Hồi quy tuyến tính: tăng độ nhiễu ---")
+muc_nhieu = [0.5, 1, 2, 3, 5, 10]
+ds_mse, ds_r2 = [], []
+for s in muc_nhieu:
+    np.random.seed(0)
+    x = 2 * np.random.rand(100, 1)
+    y = 4 + 3 * x + s * np.random.randn(100, 1)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+    model = LinearRegression()
+    model.fit(x_train, y_train)
+    y_pred = model.predict(x_test)
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    ds_mse.append(mse)
+    ds_r2.append(r2)
+    print(f"Nhiễu = {s:4} | Intercept = {model.intercept_[0]:.3f} | Slope = {model.coef_[0][0]:.3f} | MSE = {mse:.3f} | R2 = {r2:.3f}")
+
+fig, ax = plt.subplots(1, 2, figsize=(11, 4))
+ax[0].plot(muc_nhieu, ds_mse, marker="o", color="red")
+ax[0].set_title("MSE theo độ nhiễu")
+ax[0].set_xlabel("Độ lệch chuẩn của nhiễu")
+ax[0].set_ylabel("MSE")
+ax[1].plot(muc_nhieu, ds_r2, marker="o", color="blue")
+ax[1].set_title("R2 theo độ nhiễu")
+ax[1].set_xlabel("Độ lệch chuẩn của nhiễu")
+ax[1].set_ylabel("R2")
+plt.tight_layout()
+plt.show()
+
+print("\n--- Hồi quy logistic: tăng tỉ lệ nhãn bị nhiễu ---")
+ti_le_nhieu = [0, 0.05, 0.1, 0.2, 0.3, 0.4]
+ds_acc = []
+for p in ti_le_nhieu:
+    rng = np.random.default_rng(0)
+    bmi = rng.normal(25, 4, 500)
+    nhan = (bmi + rng.normal(0, 1, 500) > 27).astype(int)
+    dao_nhan = rng.random(500) < p
+    nhan = np.where(dao_nhan, 1 - nhan, nhan)
+    X_train, X_test, y_train, y_test = train_test_split(bmi.reshape(-1, 1), nhan, test_size=0.2, random_state=42)
+    model = LogisticRegression()
+    model.fit(X_train, y_train)
+    acc = accuracy_score(y_test, model.predict(X_test))
+    ds_acc.append(acc)
+    print(f"Tỉ lệ nhãn nhiễu = {p:.2f} | Accuracy = {acc:.3f}")
+
+plt.plot(ti_le_nhieu, ds_acc, marker="o", color="green")
+plt.title("Accuracy theo tỉ lệ nhãn nhiễu")
+plt.xlabel("Tỉ lệ nhãn bị đảo")
+plt.ylabel("Accuracy")
+plt.show()
